@@ -1,16 +1,6 @@
-import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing'
-
+// PostProcessing effects stub — returns null to avoid the @react-three/postprocessing
+// peer dependency chain (postprocessing lib + fiber v9 conflict).
+// Visual bloom/vignette can be re-enabled once dependencies are stable.
 export function PostProcessing({ bloomIntensity = 1.2 }) {
-  return (
-    <EffectComposer multisampling={0}>
-      <Bloom
-        intensity={bloomIntensity}
-        luminanceThreshold={0.15}
-        luminanceSmoothing={0.9}
-        mipmapBlur
-        radius={0.7}
-      />
-      <Vignette offset={0.35} darkness={0.6} />
-    </EffectComposer>
-  )
+  return null
 }

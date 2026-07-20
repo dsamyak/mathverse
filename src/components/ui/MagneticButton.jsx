@@ -1,39 +1,50 @@
-import { useRef, useCallback } from 'react'
-import { motion, useMotionValue, useSpring } from 'framer-motion'
+import { useRef, useCallback, useState } from 'react'
 
+// MagneticButton — pure CSS/React version, no framer-motion needed.
+// Uses CSS transitions + mouse position for the magnetic pull effect.
 export function MagneticButton({ children, className = '', onClick, strength = 0.35, ...props }) {
   const ref = useRef(null)
-  const rawX = useMotionValue(0)
-  const rawY = useMotionValue(0)
-  const x = useSpring(rawX, { stiffness: 300, damping: 20 })
-  const y = useSpring(rawY, { stiffness: 300, damping: 20 })
+  const [translate, setTranslate] = useState({ x: 0, y: 0 })
+  const [scale, setScale] = useState(1)
+  const frameRef = useRef(null)
 
   const handleMouseMove = useCallback((e) => {
-    const rect = ref.current.getBoundingClientRect()
-    const cx = rect.left + rect.width / 2
-    const cy = rect.top + rect.height / 2
-    rawX.set((e.clientX - cx) * strength)
-    rawY.set((e.clientY - cy) * strength)
-  }, [rawX, rawY, strength])
+    if (!ref.current) return
+    cancelAnimationFrame(frameRef.current)
+    frameRef.current = requestAnimationFrame(() => {
+      const rect = ref.current.getBoundingClientRect()
+      const cx = rect.left + rect.width / 2
+      const cy = rect.top + rect.height / 2
+      setTranslate({
+        x: (e.clientX - cx) * strength,
+        y: (e.clientY - cy) * strength,
+      })
+    })
+  }, [strength])
 
   const handleMouseLeave = useCallback(() => {
-    rawX.set(0)
-    rawY.set(0)
-  }, [rawX, rawY])
+    cancelAnimationFrame(frameRef.current)
+    setTranslate({ x: 0, y: 0 })
+    setScale(1)
+  }, [])
 
   return (
-    <motion.button
+    <button
       ref={ref}
       className={className}
-      style={{ x, y }}
+      style={{
+        transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
+        transition: 'transform 0.25s cubic-bezier(0.34,1.56,0.64,1)',
+      }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.97 }}
+      onMouseEnter={() => setScale(1.05)}
+      onMouseDown={() => setScale(0.97)}
+      onMouseUp={() => setScale(1.05)}
       onClick={onClick}
       {...props}
     >
       {children}
-    </motion.button>
+    </button>
   )
 }
