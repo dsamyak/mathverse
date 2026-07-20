@@ -1,0 +1,408 @@
+You are a senior UI/UX designer, Three.js expert, React developer, motion designer, and educational game developer.
+
+Your objective is to completely redesign this project into one of the most visually impressive educational websites on the internet.
+
+Do NOT simply add 3D objects.
+
+The entire experience should feel like entering a futuristic mathematical universe.
+
+Overall Vision
+
+Create an experience where mathematics feels alive.
+
+Think of the visual quality of:
+
+Apple Vision Pro website
+Spline websites
+Three.js Journey
+Linear.app
+Framer award-winning websites
+ReactBits animations
+GSAP showcase
+
+The website should immediately impress users within the first 3 seconds.
+
+Every screen must contain depth, motion, lighting, particles, floating elements, and meaningful interactions.
+
+Design Style
+Dark futuristic theme
+Space-inspired mathematics universe
+Neon blue
+Purple
+Cyan
+Soft white highlights
+Glassmorphism
+Floating cards
+Dynamic lighting
+Bloom effects
+Volumetric lighting
+Ambient particles
+Smooth gradients
+
+No flat UI.
+
+Everything should feel alive.
+
+3D Scene Architecture
+
+Replace static backgrounds with fully interactive Three.js scenes.
+
+Include:
+
+Floating mathematical symbols
+
+−
+×
+÷
+=
+%
+π
+√
+∑
+∞
+
+These symbols should slowly rotate.
+
+Floating geometric solids
+
+Cube
+Sphere
+Cone
+Cylinder
+Pyramid
+Prism
+Torus
+Icosahedron
+
+Each should have:
+
+realistic lighting
+subtle rotation
+shadows
+glass material
+reflective material
+
+Animated Number Galaxy
+
+Thousands of tiny particles.
+
+Randomly generate:
+
+0–9
+
+The numbers should:
+
+float
+connect
+dissolve
+reform
+
+similar to galaxy particles.
+
+Interactive Coordinate Grid
+
+Build a huge animated coordinate plane.
+
+As the mouse moves:
+
+wave distortion
+glowing intersections
+animated axis
+pulse effect
+
+3D Hero Scene
+
+Centerpiece:
+
+A floating magical cube called
+
+"The Math Core"
+
+Inside it:
+
+equations
+glowing numbers
+particles
+orbiting mathematical symbols
+
+Mouse movement should rotate the world.
+
+Camera Effects
+
+Camera should never feel static.
+
+Include:
+
+subtle floating
+parallax
+smooth zoom
+depth movement
+mouse tracking
+
+No sudden jumps.
+
+Lighting
+
+Use cinematic lighting.
+
+Include
+
+HemisphereLight
+DirectionalLight
+PointLight
+Rim Light
+Bloom
+Environment maps
+HDRI reflections
+
+Soft shadows.
+
+Micro Animations
+
+Every UI element should have motion.
+
+Buttons
+
+magnetic hover
+glow
+ripple
+scale
+
+Cards
+
+lift
+rotate
+glass reflection
+
+Icons
+
+bounce
+float
+
+Numbers
+
+counting animation
+
+Progress bars
+
+liquid animation
+
+Educational Simulations
+
+Every lesson should become a 3D simulation instead of a static animation.
+
+Examples
+
+Addition
+
+Numbers become floating cubes.
+
+Merge physically.
+
+Show answer.
+
+Subtraction
+
+Objects disappear from a group.
+
+Multiplication
+
+Create arrays in 3D.
+
+Rows × Columns.
+
+Division
+
+Split 3D objects equally.
+
+Fractions
+
+Interactive pizza
+
+Cake
+
+Chocolate
+
+Water tank
+
+Students drag slices.
+
+Decimals
+
+Liquid fills transparent containers.
+
+Percentages
+
+Animated circular worlds.
+
+Probability
+
+3D spinner
+
+Dice
+
+Coin
+
+Geometry
+
+Rotate every shape.
+
+Measure:
+
+edges
+angles
+faces
+vertices
+
+Volume
+
+Water fills containers.
+
+Measurement
+
+Interactive ruler
+
+Tape
+
+Scale
+
+Clock
+
+Money
+
+3D coins
+
+Currency notes
+
+Shopping simulation
+
+Data
+
+Bars rise from ground.
+
+Pie charts explode into pieces.
+
+Line graphs animate.
+
+Gamification
+
+Turn learning into exploration.
+
+Player enters
+
+MathVerse.
+
+Unlock:
+
+planets
+levels
+powers
+badges
+
+XP
+
+Coins
+
+Achievements
+
+Stars
+
+Daily streak
+
+Level progression
+
+Boss challenges
+
+Treasure rewards
+
+Interactions
+
+Mouse movement should affect:
+
+lights
+particles
+camera
+cards
+buttons
+3D objects
+
+Scroll should trigger cinematic transitions.
+
+Nothing should instantly appear.
+
+Everything should animate into view.
+
+Performance
+
+Maintain 60 FPS.
+
+Implement:
+
+lazy loading
+LOD
+instancing
+texture compression
+memoization
+code splitting
+Suspense
+adaptive quality
+GPU optimization
+
+Accessibility
+
+Even with heavy visuals:
+
+keyboard navigation
+reduced motion support
+readable typography
+responsive layouts
+touch support
+high contrast
+
+Technical Stack
+
+Use:
+
+React
+Three.js
+React Three Fiber
+Drei
+GSAP
+Framer Motion
+React Spring (only where useful)
+React Lenis
+Post Processing
+Leva (debug)
+Theatre.js (scene choreography)
+
+Avoid unnecessary dependencies.
+
+Code Quality
+
+Refactor the project into reusable modules.
+
+Suggested structure:
+
+src/
+ ├── components/
+ │    ├── three/
+ │    ├── ui/
+ │    ├── animations/
+ │    ├── simulations/
+ │    └── effects/
+ │
+ ├── scenes/
+ ├── hooks/
+ ├── shaders/
+ ├── materials/
+ ├── assets/
+ ├── utils/
+ └── pages/
+
+Expected Outcome
+
+The final product should feel like a modern AAA educational experience rather than a traditional learning website.
+
+Every page should create a sense of exploration, curiosity, and immersion. Mathematics should be represented through interactive 3D worlds, dynamic simulations, and cinematic animations that encourage experimentation instead of passive learning.
+
+The interface must be polished enough to serve as a flagship portfolio project, with production-ready architecture, reusable components, responsive design, optimized rendering, and smooth 60 FPS interactions across desktop and mobile devices. The end result should resemble a premium product from companies like Apple, Spline, or Linear while remaining intuitive and genuinely educational.

@@ -1,287 +1,384 @@
-import { useRef, useEffect, useState } from 'react'
-import { Canvas } from '@react-three/fiber'
-import { Sparkles, Stars, Environment } from '@react-three/drei'
+import { useRef, useEffect, useState, Suspense } from 'react'
+import { Canvas, useFrame } from '@react-three/fiber'
+import { Stars, Environment } from '@react-three/drei'
 import { useNavigate } from 'react-router-dom'
 import { gsap } from 'gsap'
-import * as THREE from 'three'
-import { useFrame } from '@react-three/fiber'
+import { motion, AnimatePresence } from 'framer-motion'
+import { MathCore } from '../components/three/MathCore'
+import { ParticleGalaxy } from '../components/three/ParticleGalaxy'
+import { FloatingSymbols } from '../components/three/FloatingSymbols'
+import { GeometricSolids } from '../components/three/GeometricSolids'
+import { CoordinateGrid } from '../components/three/CoordinateGrid'
+import { PostProcessing } from '../components/effects/PostProcessing'
+import { MagneticButton } from '../components/ui/MagneticButton'
+import { useMouseParallax } from '../hooks/useMouseParallax'
 import { useWorldStore } from '../store/worldStore'
 import { usePlayerStore } from '../store/playerStore'
 
-// ── Floating archipelago preview in title canvas ──────────────────
-function TitleWorld() {
-  const groupRef = useRef()
-
+// ── Cinematic camera that responds to mouse ───────────────────────
+function SceneCamera({ mouseNX, mouseNY }) {
   useFrame((state) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y = state.clock.getElapsedTime() * 0.05
-      groupRef.current.position.y = Math.sin(state.clock.getElapsedTime() * 0.4) * 0.3
-    }
+    const t = state.clock.getElapsedTime()
+    state.camera.position.x += (mouseNX * 1.5 - state.camera.position.x) * 0.03
+    state.camera.position.y += (-mouseNY * 0.8 + 1.5 + Math.sin(t * 0.3) * 0.15 - state.camera.position.y) * 0.03
+    state.camera.lookAt(0, 0, 0)
   })
+  return null
+}
 
-  const islands = [
-    { pos: [-3, 0, 0], color: '#4ade80', r: 1.8 },
-    { pos: [0, -1, -3], color: '#22d3ee', r: 2.2 },
-    { pos: [3, 0.5, 0], color: '#a855f7', r: 1.5 },
-    { pos: [0, 1, 3], color: '#34d399', r: 1.6 },
-    { pos: [-1.5, -0.5, 2.5], color: '#f59e0b', r: 1.1 },
-  ]
-
+// ── The full 3D universe scene ────────────────────────────────────
+function Universe({ mouseNX, mouseNY }) {
   return (
-    <group ref={groupRef}>
-      {islands.map((isl, i) => (
-        <group key={i} position={isl.pos}>
-          <mesh castShadow receiveShadow>
-            <cylinderGeometry args={[isl.r, isl.r * 1.2, 0.7, 24]} />
-            <meshStandardMaterial color="#1e293b" roughness={0.8} />
-          </mesh>
-          <mesh position={[0, 0.4, 0]}>
-            <cylinderGeometry args={[isl.r * 0.95, isl.r, 0.2, 24]} />
-            <meshStandardMaterial color={isl.color} roughness={0.6} />
-          </mesh>
-          {/* Mini landmark */}
-          <mesh position={[0, 0.9, 0]} castShadow>
-            <coneGeometry args={[isl.r * 0.3, isl.r * 0.8, 6]} />
-            <meshStandardMaterial color={isl.color} emissive={isl.color} emissiveIntensity={0.3} />
-          </mesh>
-        </group>
-      ))}
+    <>
+      {/* Lighting */}
+      <ambientLight intensity={0.15} color="#1a1a3e" />
+      <directionalLight position={[5, 8, 5]}   intensity={0.6} color="#bfdbfe" />
+      <directionalLight position={[-8, 5, -5]} intensity={0.4} color="#e9d5ff" />
+      <pointLight position={[0, 0, 4]} intensity={1.5} color="#38bdf8" distance={20} decay={2} />
 
-      {/* Connecting bridges */}
-      {[
-        { from: [-3,0,0], to: [0,0,-3] },
-        { from: [0,0,-3], to: [3,0,0] },
-      ].map((b, i) => {
-        const mid = [
-          (b.from[0] + b.to[0]) / 2,
-          (b.from[1] + b.to[1]) / 2,
-          (b.from[2] + b.to[2]) / 2,
-        ]
-        const len = Math.sqrt(
-          Math.pow(b.to[0]-b.from[0],2) +
-          Math.pow(b.to[2]-b.from[2],2)
-        )
-        const angle = Math.atan2(b.to[0]-b.from[0], b.to[2]-b.from[2])
-        return (
-          <mesh key={i} position={mid} rotation={[0, angle, 0]}>
-            <boxGeometry args={[0.25, 0.1, len]} />
-            <meshStandardMaterial color="#38bdf8" emissive="#38bdf8" emissiveIntensity={0.4} transparent opacity={0.7} />
-          </mesh>
-        )
-      })}
+      {/* Deep space fog */}
+      <fog attach="fog" args={['#030510', 20, 60]} />
 
-      <Sparkles count={80} scale={15} size={2} speed={0.3} color="#38bdf8" />
-    </group>
+      {/* Background stars */}
+      <Stars radius={80} depth={60} count={4000} factor={4} saturation={0.2} fade speed={0.5} />
+
+      {/* Particle galaxy */}
+      <ParticleGalaxy count={2500} radius={24} />
+
+      {/* Main centerpiece — offset right so UI text fits left */}
+      <group position={[2.5, 0, 0]}>
+        <MathCore mouseNX={mouseNX} mouseNY={mouseNY} />
+      </group>
+
+      {/* Floating geometric solids */}
+      <GeometricSolids />
+
+      {/* Floating math symbols */}
+      <FloatingSymbols count={16} />
+
+      {/* Interactive coordinate grid */}
+      <CoordinateGrid mouseNX={mouseNX} mouseNY={mouseNY} />
+
+      {/* Environment reflections */}
+      <Environment preset="night" />
+
+      {/* Post-processing: bloom + vignette */}
+      <PostProcessing bloomIntensity={1.4} />
+
+      {/* Camera controller */}
+      <SceneCamera mouseNX={mouseNX} mouseNY={mouseNY} />
+    </>
   )
 }
 
-// ── Math symbol drifting particles (DOM layer) ────────────────────
-function MathParticles() {
-  const symbols = ['∑','∫','π','√','∞','÷','×','±','≠','≈','²','³','½','⅓','∆','θ']
-  const particles = Array.from({ length: 18 }, (_, i) => ({
-    symbol: symbols[i % symbols.length],
-    left: `${Math.random() * 95}%`,
-    delay: `${Math.random() * 8}s`,
-    duration: `${8 + Math.random() * 12}s`,
-    size: `${14 + Math.random() * 22}px`,
-    opacity: 0.3 + Math.random() * 0.4,
-  }))
+// ── Companion intro dialog ────────────────────────────────────────
+const LINES = [
+  'Welcome to MathVerse. ✦',
+  'Every grade is a planet.',
+  'Every concept, a star to discover.',
+  'Your universe awaits...',
+]
 
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {particles.map((p, i) => (
-        <span
-          key={i}
-          className="math-particle"
-          style={{
-            left: p.left,
-            bottom: '-50px',
-            fontSize: p.size,
-            opacity: p.opacity,
-            animationDuration: p.duration,
-            animationDelay: p.delay,
-          }}
-        >
-          {p.symbol}
-        </span>
-      ))}
-    </div>
-  )
-}
-
-// ── Companion greeting overlay ────────────────────────────────────
 function CompanionGreeting({ onDone }) {
-  const lines = [
-    'Welcome back, Explorer! 🌟',
-    'Every grade is an island.',
-    'Every idea you master builds a bridge to the next.',
-    'Your adventure continues...',
-  ]
-  const [lineIdx, setLineIdx] = useState(0)
+  const [idx, setIdx] = useState(0)
   const [visible, setVisible] = useState(true)
 
   useEffect(() => {
-    if (lineIdx < lines.length - 1) {
-      const t = setTimeout(() => setLineIdx(i => i + 1), 1800)
+    if (idx < LINES.length - 1) {
+      const t = setTimeout(() => setIdx(i => i + 1), 1900)
       return () => clearTimeout(t)
     } else {
-      const t = setTimeout(() => { setVisible(false); setTimeout(onDone, 600) }, 1800)
+      const t = setTimeout(() => {
+        setVisible(false)
+        setTimeout(onDone, 500)
+      }, 1900)
       return () => clearTimeout(t)
     }
-  }, [lineIdx])
+  }, [idx])
 
   return (
-    <div className={`absolute inset-0 flex items-center justify-center z-30 transition-opacity duration-500 ${visible ? 'opacity-100' : 'opacity-0'}`}>
-      <div className="glass border-glow-ocean p-10 max-w-lg text-center screen-enter">
-        {/* Companion avatar */}
-        <div className="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center text-4xl animate-float"
-          style={{ background: 'linear-gradient(135deg, #0ea5e9, #a855f7)', boxShadow: '0 0 40px rgba(14,165,233,0.5)' }}>
-          🤖
-        </div>
-        <p className="text-sm font-outfit font-semibold text-crystal-400 uppercase tracking-widest mb-3">Intellia AI</p>
-        <p className="text-2xl font-outfit font-bold text-white leading-relaxed min-h-[4rem] flex items-center justify-center">
-          {lines[lineIdx]}
-        </p>
-        <div className="flex gap-1.5 justify-center mt-6">
-          {lines.map((_, i) => (
-            <div key={i} className={`w-2 h-2 rounded-full transition-all duration-300 ${i === lineIdx ? 'bg-crystal-400 w-5' : 'bg-white/20'}`} />
-          ))}
-        </div>
-        <button className="btn-secondary mt-6 text-sm" onClick={onDone}>
-          Skip intro →
-        </button>
-      </div>
-    </div>
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          className="absolute inset-0 flex items-center justify-center z-30"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <motion.div
+            className="glass border-glow-ocean p-10 max-w-md text-center"
+            initial={{ y: 30, scale: 0.95 }}
+            animate={{ y: 0, scale: 1 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 22 }}
+          >
+            <div
+              className="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center text-4xl animate-float"
+              style={{ background: 'linear-gradient(135deg, #0ea5e9, #a855f7)', boxShadow: '0 0 40px rgba(14,165,233,0.5)' }}
+            >
+              🤖
+            </div>
+            <p className="text-xs font-outfit font-bold text-crystal-400 uppercase tracking-[0.2em] mb-3">
+              Intellia AI
+            </p>
+            <AnimatePresence mode="wait">
+              <motion.p
+                key={idx}
+                className="text-2xl font-outfit font-bold text-white leading-relaxed min-h-[3.5rem]"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.35 }}
+              >
+                {LINES[idx]}
+              </motion.p>
+            </AnimatePresence>
+            <div className="flex gap-1.5 justify-center mt-5">
+              {LINES.map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="h-1.5 rounded-full"
+                  animate={{ width: i === idx ? 20 : 8, opacity: i === idx ? 1 : 0.25 }}
+                  style={{ background: '#22d3ee' }}
+                  transition={{ duration: 0.3 }}
+                />
+              ))}
+            </div>
+            <button className="btn-secondary mt-6 text-sm" onClick={onDone}>
+              Skip intro →
+            </button>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 
+// ── Stats strip ───────────────────────────────────────────────────
+const STATS = [
+  { value: '10',   label: 'Grade Realms' },
+  { value: '30+',  label: 'Districts' },
+  { value: '100+', label: 'Skill Nodes' },
+]
+
 // ── Main Title Scene ──────────────────────────────────────────────
 export default function TitleScene() {
-  const navigate = useNavigate()
-  const setCameraMode = useWorldStore(s => s.setCameraMode)
-  const studentName = usePlayerStore(s => s.studentName)
-  const [showGreeting, setShowGreeting] = useState(false)
-  const [showEnter, setShowEnter] = useState(false)
-  const logoRef = useRef()
-  const taglineRef = useRef()
-  const btnRef = useRef()
+  const navigate        = useNavigate()
+  const setCameraMode   = useWorldStore(s => s.setCameraMode)
+  const studentName     = usePlayerStore(s => s.studentName)
+  const mouse           = useMouseParallax(1)
+
+  const [showGreeting, setShowGreeting]   = useState(false)
+  const [uiReady, setUiReady]             = useState(false)
+  const overlayRef                        = useRef()
 
   useEffect(() => {
     setCameraMode('cinematic')
-
-    // Staggered entrance
-    const tl = gsap.timeline({ delay: 0.5 })
-    tl.fromTo(logoRef.current, { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 1.2, ease: 'power3.out' })
-      .fromTo(taglineRef.current, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.9, ease: 'power2.out' }, '-=0.5')
-      .call(() => setShowEnter(true))
+    const t = setTimeout(() => setUiReady(true), 400)
+    return () => clearTimeout(t)
   }, [])
 
-  const handleEnter = () => {
-    setShowGreeting(true)
-  }
+  const handleEnter = () => setShowGreeting(true)
 
   const handleGreetingDone = () => {
-    gsap.to('.title-overlay', {
-      opacity: 0, duration: 0.8, ease: 'power2.in',
-      onComplete: () => navigate('/hub')
+    gsap.to(overlayRef.current, {
+      opacity: 0, duration: 0.7, ease: 'power2.in',
+      onComplete: () => navigate('/hub'),
     })
   }
 
+  const containerVariants = {
+    hidden: {},
+    show: { transition: { staggerChildren: 0.18 } },
+  }
+  const itemVariants = {
+    hidden: { opacity: 0, y: 32 },
+    show:   { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 180, damping: 22 } },
+  }
+
   return (
-    <div className="relative w-full h-full bg-cosmic-950 overflow-hidden">
-      {/* 3D Background Canvas */}
-      <div className="absolute inset-0">
+    <div className="relative w-full h-full overflow-hidden" style={{ background: '#030510' }}>
+
+      {/* ── Full-screen 3D Universe ── */}
+      <div className="absolute inset-0 z-0">
         <Canvas
-          camera={{ position: [0, 8, 18], fov: 55 }}
-          gl={{ antialias: true }}
-          shadows
+          camera={{ position: [0, 1.5, 14], fov: 55 }}
+          gl={{ antialias: true, toneMapping: 3, toneMappingExposure: 1 }}
+          dpr={[1, 1.5]}
         >
-          <ambientLight intensity={0.3} />
-          <directionalLight position={[5, 10, 5]} intensity={1.5} castShadow color="#bfdbfe" />
-          <pointLight position={[-5, 5, -5]} intensity={0.8} color="#a855f7" />
-          <fog attach="fog" args={['#040714', 30, 70]} />
-          <Stars radius={100} depth={50} count={3000} factor={4} saturation={0} fade speed={0.5} />
-          <TitleWorld />
-          <Environment preset="night" />
+          <Suspense fallback={null}>
+            <Universe mouseNX={mouse.normalX} mouseNY={mouse.normalY} />
+          </Suspense>
         </Canvas>
       </div>
 
-      {/* Math particles */}
-      <MathParticles />
+      {/* ── Radial vignette (left side darker for text readability) ── */}
+      <div
+        className="absolute inset-0 z-10 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse 70% 100% at 20% 50%, rgba(3,5,16,0.65) 0%, transparent 70%)',
+        }}
+      />
+      <div
+        className="absolute inset-0 z-10 pointer-events-none"
+        style={{
+          background: 'linear-gradient(to bottom, rgba(3,5,16,0.5) 0%, transparent 30%, transparent 70%, rgba(3,5,16,0.6) 100%)',
+        }}
+      />
 
-      {/* Deep gradient overlay */}
-      <div className="absolute inset-0 pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse at center, transparent 30%, #040714 80%)' }} />
+      {/* ── UI Overlay ── */}
+      <div ref={overlayRef} className="absolute inset-0 z-20 flex items-center">
+        <div className="max-w-7xl mx-auto w-full px-8 lg:px-16 flex items-center">
 
-      {/* UI Overlay */}
-      <div className="title-overlay absolute inset-0 flex flex-col items-center justify-center px-6">
-        {/* Logo & branding */}
-        <div className="text-center">
-          <div ref={logoRef} className="opacity-0 mb-4">
-            <div className="inline-flex items-center gap-3 mb-4">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl font-black font-outfit"
-                style={{ background: 'linear-gradient(135deg, #0ea5e9, #a855f7)', boxShadow: '0 0 30px rgba(168,85,247,0.4)' }}>
-                M
-              </div>
-              <h1 className="text-7xl font-black font-outfit text-gradient-ocean tracking-tight">
-                MathVerse
-              </h1>
-              <span className="text-2xl text-white/40 font-outfit font-light self-start mt-3">™</span>
-            </div>
-            {studentName && (
-              <p className="text-lg font-inter text-white/60 mb-2">
-                Welcome back, <span className="text-crystal-400 font-semibold">{studentName}</span> 👋
-              </p>
-            )}
+          {/* Left content — takes up ~50% on large screens */}
+          <div className="w-full max-w-xl">
+            <AnimatePresence>
+              {uiReady && !showGreeting && (
+                <motion.div
+                  variants={containerVariants}
+                  initial="hidden"
+                  animate="show"
+                  exit={{ opacity: 0, transition: { duration: 0.3 } }}
+                >
+                  {/* Badge */}
+                  <motion.div variants={itemVariants} className="mb-6">
+                    <span
+                      className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-outfit font-bold uppercase tracking-widest border"
+                      style={{
+                        background: 'rgba(56,189,248,0.08)',
+                        borderColor: 'rgba(56,189,248,0.25)',
+                        color: '#38bdf8',
+                      }}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                      3D Mathematics Universe
+                    </span>
+                  </motion.div>
+
+                  {/* Logo wordmark */}
+                  <motion.div variants={itemVariants} className="mb-2">
+                    <div className="flex items-end gap-3 mb-2">
+                      <div
+                        className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl font-black font-outfit flex-shrink-0"
+                        style={{
+                          background: 'linear-gradient(135deg, #0ea5e9, #a855f7)',
+                          boxShadow: '0 0 40px rgba(168,85,247,0.45)',
+                        }}
+                      >
+                        M
+                      </div>
+                      <h1
+                        className="text-6xl lg:text-7xl font-black font-outfit leading-none"
+                        style={{
+                          background: 'linear-gradient(135deg, #38bdf8 0%, #22d3ee 40%, #a855f7 100%)',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          backgroundClip: 'text',
+                          filter: 'drop-shadow(0 0 30px rgba(56,189,248,0.4))',
+                        }}
+                      >
+                        MathVerse
+                      </h1>
+                    </div>
+                    {studentName && (
+                      <p className="text-sm font-inter text-white/50 mt-1 ml-1">
+                        Welcome back,{' '}
+                        <span className="text-crystal-400 font-semibold">{studentName}</span> 👋
+                      </p>
+                    )}
+                  </motion.div>
+
+                  {/* Tagline */}
+                  <motion.p
+                    variants={itemVariants}
+                    className="text-lg lg:text-xl font-outfit font-light text-white/60 mb-3 leading-relaxed"
+                  >
+                    Where mathematics becomes an
+                    <span className="text-crystal-400 font-semibold"> immersive universe</span>.
+                    <br />
+                    Explore concepts as living, breathing 3D worlds.
+                  </motion.p>
+
+                  {/* Keyword pills */}
+                  <motion.div variants={itemVariants} className="flex items-center gap-3 mb-10">
+                    {['Play', 'Explore', 'Master'].map((word, i) => (
+                      <span
+                        key={i}
+                        className="px-3 py-1 rounded-full text-xs font-outfit font-semibold"
+                        style={{
+                          background: 'rgba(255,255,255,0.05)',
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          color: 'rgba(255,255,255,0.55)',
+                        }}
+                      >
+                        {word}
+                      </span>
+                    ))}
+                  </motion.div>
+
+                  {/* CTA button */}
+                  <motion.div variants={itemVariants}>
+                    <MagneticButton
+                      className="btn-primary text-lg px-10 py-5 mb-4"
+                      style={{
+                        background: 'linear-gradient(135deg, #0ea5e9, #a855f7)',
+                        boxShadow: '0 0 50px rgba(14,165,233,0.4), 0 0 80px rgba(168,85,247,0.2)',
+                      }}
+                      onClick={handleEnter}
+                    >
+                      <span>Enter MathVerse</span>
+                      <span className="text-xl">🚀</span>
+                    </MagneticButton>
+                    <p className="text-xs font-inter text-white/25 tracking-widest uppercase">
+                      Grades 1–10 · Mastery-Gated · 100+ Skills
+                    </p>
+                  </motion.div>
+
+                  {/* Stats */}
+                  <motion.div variants={itemVariants} className="flex gap-5 mt-10">
+                    {STATS.map((s, i) => (
+                      <div key={i} className="glass-light px-5 py-3 rounded-2xl text-center">
+                        <div
+                          className="text-2xl font-black font-outfit"
+                          style={{
+                            background: 'linear-gradient(135deg, #fde047, #fb923c)',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            backgroundClip: 'text',
+                          }}
+                        >
+                          {s.value}
+                        </div>
+                        <div className="text-xs font-inter text-white/40 mt-0.5">{s.label}</div>
+                      </div>
+                    ))}
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-
-          <div ref={taglineRef} className="opacity-0">
-            <p className="text-2xl font-outfit font-light text-white/70 mb-2 tracking-wider">
-              A 3D World of Mathematics Mastery
-            </p>
-            <div className="flex items-center justify-center gap-3 mb-12 text-sm font-outfit font-semibold tracking-widest uppercase">
-              {['Play', 'Learn', 'Evolve'].map((word, i) => (
-                <span key={i} className="flex items-center gap-3">
-                  <span className="text-crystal-400">{word}</span>
-                  {i < 2 && <span className="text-white/20">·</span>}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Enter button */}
-          {showEnter && !showGreeting && (
-            <div className="screen-enter">
-              <button ref={btnRef} className="btn-primary text-xl px-12 py-5" onClick={handleEnter}>
-                <span>Enter MathVerse</span>
-                <span className="text-2xl">🚀</span>
-              </button>
-              <p className="text-white/30 text-xs font-inter mt-5 tracking-wide">
-                GRADES 1–10 · 3D WORLD · MASTERY-GATED
-              </p>
-            </div>
-          )}
         </div>
-
-        {/* Bottom stats strip */}
-        {showEnter && !showGreeting && (
-          <div className="absolute bottom-10 left-0 right-0 flex justify-center gap-8 screen-enter">
-            {[
-              { label: 'Grade Realms', value: '10' },
-              { label: 'Concept Districts', value: '30+' },
-              { label: 'Skill Nodes', value: '100+' },
-            ].map((stat, i) => (
-              <div key={i} className="text-center glass-light px-6 py-3 rounded-2xl">
-                <div className="text-2xl font-black font-outfit text-gradient-gold">{stat.value}</div>
-                <div className="text-xs font-inter text-white/50 mt-0.5 tracking-wide">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
-      {/* Companion greeting */}
+      {/* ── Companion Greeting overlay ── */}
       {showGreeting && <CompanionGreeting onDone={handleGreetingDone} />}
+
+      {/* ── Corner scroll hint ── */}
+      <AnimatePresence>
+        {uiReady && !showGreeting && (
+          <motion.div
+            className="absolute bottom-7 right-8 z-20 flex flex-col items-end gap-1"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.5, duration: 0.8 }}
+          >
+            <p className="text-xs text-white/20 font-inter tracking-widest uppercase">
+              Move cursor to explore
+            </p>
+            <div className="w-px h-6 bg-gradient-to-b from-transparent to-white/20 ml-auto" />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

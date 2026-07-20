@@ -8,4 +8,9 @@ export default defineConfig({
       '@': '/src',
     },
   },
+  server: {
+    host: true,
+    port: 5000,
+    allowedHosts: 'all',
+  },
 })
