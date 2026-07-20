@@ -1,0 +1,264 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Root Design Tokens ─────────────────────────────────────────── */
+:root {
+  --color-cosmic-950: #040714;
+  --color-cosmic-900: #080e24;
+  --color-cosmic-800: #0d1640;
+  --color-ocean-400: #38bdf8;
+  --color-island-400: #4ade80;
+  --color-gold-400: #facc15;
+  --color-crystal-400: #22d3ee;
+  --color-mystic-500: #a855f7;
+
+  --font-heading: 'Outfit', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --radius-card: 1.25rem;
+  --shadow-glow-ocean: 0 0 30px rgba(56, 189, 248, 0.5);
+  --shadow-glow-gold: 0 0 30px rgba(250, 204, 21, 0.6);
+  --shadow-glow-mystic: 0 0 30px rgba(168, 85, 247, 0.5);
+}
+
+/* ── Base Reset & Body ──────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-cosmic-950);
+  font-family: var(--font-body);
+  color: #f0f4ff;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Glassmorphism Utilities ────────────────────────────────────── */
+.glass {
+  background: rgba(13, 22, 64, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(56, 189, 248, 0.15);
+  border-radius: var(--radius-card);
+}
+
+.glass-light {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-card);
+}
+
+.glass-dark {
+  background: rgba(4, 7, 20, 0.8);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(56, 189, 248, 0.1);
+  border-radius: var(--radius-card);
+}
+
+/* ── Gradient Text ──────────────────────────────────────────────── */
+.text-gradient-ocean {
+  background: linear-gradient(135deg, #38bdf8 0%, #22d3ee 50%, #4ade80 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-gold {
+  background: linear-gradient(135deg, #fde047 0%, #facc15 50%, #fb923c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-mystic {
+  background: linear-gradient(135deg, #c084fc 0%, #a855f7 50%, #38bdf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Shimmer Effect ─────────────────────────────────────────────── */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0.15) 50%,
+    rgba(255,255,255,0) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+/* ── Glowing Borders ────────────────────────────────────────────── */
+.border-glow-ocean {
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.2), inset 0 0 20px rgba(56, 189, 248, 0.05);
+}
+.border-glow-gold {
+  border: 1px solid rgba(250, 204, 21, 0.5);
+  box-shadow: 0 0 20px rgba(250, 204, 21, 0.2), inset 0 0 20px rgba(250, 204, 21, 0.05);
+}
+.border-glow-mystic {
+  border: 1px solid rgba(168, 85, 247, 0.5);
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.2), inset 0 0 20px rgba(168, 85, 247, 0.05);
+}
+.border-glow-island {
+  border: 1px solid rgba(74, 222, 128, 0.5);
+  box-shadow: 0 0 20px rgba(74, 222, 128, 0.2), inset 0 0 20px rgba(74, 222, 128, 0.05);
+}
+
+/* ── Button Utilities ───────────────────────────────────────────── */
+.btn-primary {
+  @apply inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-outfit font-bold text-lg;
+  background: linear-gradient(135deg, #0ea5e9, #22c55e);
+  color: white;
+  box-shadow: 0 4px 30px rgba(14, 165, 233, 0.4);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: none;
+}
+.btn-primary:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 8px 40px rgba(14, 165, 233, 0.6);
+}
+.btn-primary:active { transform: translateY(0) scale(0.98); }
+
+.btn-secondary {
+  @apply inline-flex items-center gap-2 px-6 py-3 rounded-xl font-outfit font-semibold text-base;
+  background: rgba(56, 189, 248, 0.1);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+.btn-secondary:hover {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: rgba(56, 189, 248, 0.6);
+  transform: translateY(-2px);
+}
+
+/* ── Card Utilities ─────────────────────────────────────────────── */
+.card-realm {
+  @apply relative overflow-hidden cursor-pointer;
+  background: rgba(13, 22, 64, 0.7);
+  border-radius: 1.5rem;
+  border: 1px solid rgba(56, 189, 248, 0.15);
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.card-realm:hover {
+  transform: translateY(-8px) scale(1.02);
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 20px 60px rgba(56, 189, 248, 0.15);
+}
+
+/* ── Status Badges ──────────────────────────────────────────────── */
+.badge-mastered {
+  @apply inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold;
+  background: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+.badge-in-progress {
+  @apply inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold;
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+.badge-locked {
+  @apply inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold;
+  background: rgba(100, 116, 139, 0.15);
+  color: #94a3b8;
+  border: 1px solid rgba(100, 116, 139, 0.3);
+}
+
+/* ── Progress Bar ───────────────────────────────────────────────── */
+.progress-bar-track {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #0ea5e9, #22c55e);
+  box-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
+  transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.3);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(56, 189, 248, 0.6); }
+
+/* ── Canvas & 3D Layer ──────────────────────────────────────────── */
+canvas { display: block; outline: none; }
+
+/* ── Overlay Z-layers ───────────────────────────────────────────── */
+.layer-3d   { z-index: 0; }
+.layer-hud  { z-index: 10; }
+.layer-ui   { z-index: 20; }
+.layer-modal{ z-index: 30; }
+.layer-toast{ z-index: 40; }
+
+/* ── Font Classes ───────────────────────────────────────────────── */
+.font-outfit { font-family: 'Outfit', sans-serif; }
+.font-inter  { font-family: 'Inter', sans-serif; }
+
+/* ── Math Symbol Particles ──────────────────────────────────────── */
+@keyframes mathFloat {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 0.6; }
+  50%  { opacity: 0.9; }
+  100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+}
+.math-particle {
+  position: absolute;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  color: rgba(56, 189, 248, 0.4);
+  animation: mathFloat linear infinite;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ── XP Counter Flash ───────────────────────────────────────────── */
+@keyframes xpFlash {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.4); color: #facc15; }
+  100% { transform: scale(1); }
+}
+.xp-flash { animation: xpFlash 0.5s ease-out; }
+
+/* ── Unlock Glow Pulse ──────────────────────────────────────────── */
+@keyframes unlockPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.7); }
+  70%  { box-shadow: 0 0 0 30px rgba(250, 204, 21, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0); }
+}
+.unlock-pulse { animation: unlockPulse 1.5s ease-out; }
+
+/* ── Screen Transitions ─────────────────────────────────────────── */
+.screen-enter {
+  animation: screenEnter 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes screenEnter {
+  from { opacity: 0; transform: scale(0.96) translateY(20px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ── Reduced Motion ─────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
