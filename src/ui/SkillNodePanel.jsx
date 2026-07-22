@@ -4,6 +4,7 @@ import { useWorldStore } from '../store/worldStore'
 import { useSkillNode, useSubmitAttempt } from '../api/worldApi'
 import { usePlayerStore } from '../store/playerStore'
 import UnlockCeremony from './UnlockCeremony'
+import SimulationViewer from '../components/simulations/SimulationViewer'
 
 // ── Stage indicator ───────────────────────────────────────────────
 function StageIndicator({ stage }) {
@@ -195,8 +196,8 @@ function ExplainerCard({ node, onNext }) {
         <p className="text-white font-inter leading-relaxed text-base">{node.explainer}</p>
       </div>
 
-      {/* Dynamic visual aid */}
-      <VisualAid node={node} />
+      {/* Interactive 3D simulation */}
+      <SimulationViewer node={node} />
 
       <button className="btn-primary w-full justify-center" onClick={onNext}>
         Got it! Let me Practice →
