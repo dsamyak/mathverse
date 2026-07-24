@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber'
 import { Stars, Environment, Grid } from '@react-three/drei'
 import { useParams, useNavigate } from 'react-router-dom'
 import { gsap } from 'gsap'
+import { motion } from 'framer-motion'
 import { useRealm } from '../api/worldApi'
 import { useWorldStore } from '../store/worldStore'
 import { Avatar, CompanionNPC } from '../r3f/Avatar'
@@ -194,6 +195,67 @@ export default function RealmScene() {
     )
   }
 
+  // ── Grades with no content yet — clean "coming soon" view ────────
+  if (!realm.districts || realm.districts.length === 0) {
+    return (
+      <div
+        className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden"
+        style={{ background: 'linear-gradient(135deg, #030510 0%, #0a0a1a 100%)' }}
+      >
+        {/* Subtle radial bg */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `radial-gradient(ellipse 60% 60% at 50% 50%, ${realm.color}18 0%, transparent 70%)`,
+          }}
+        />
+
+        {/* Back button */}
+        <button
+          className="absolute top-5 left-6 btn-secondary text-sm py-2 z-10"
+          onClick={() => navigate('/hub')}
+        >
+          ← World Map
+        </button>
+
+        {/* Grade badge */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+          className="relative z-10 text-center"
+        >
+          <div
+            className="w-28 h-28 rounded-3xl mx-auto mb-6 flex items-center justify-center font-black font-outfit text-5xl text-white"
+            style={{
+              background: `linear-gradient(135deg, ${realm.gradientFrom || realm.color}, ${realm.gradientTo || realm.color})`,
+              boxShadow: `0 0 60px ${realm.color}50, 0 0 100px ${realm.color}20`,
+            }}
+          >
+            {realm.grade}
+          </div>
+
+          <h1 className="font-outfit font-black text-4xl text-white mb-2">
+            Grade {realm.grade}
+          </h1>
+          <p className="text-white/50 font-outfit text-lg mb-8">{realm.tagline}</p>
+
+          <div
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl font-outfit font-semibold text-sm"
+            style={{
+              background: `${realm.color}15`,
+              border: `1px solid ${realm.color}40`,
+              color: realm.color,
+            }}
+          >
+            <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: realm.color }} />
+            Content coming soon
+          </div>
+        </motion.div>
+      </div>
+    )
+  }
+
   return (
     <div className="relative w-full h-full overflow-hidden">
       {/* 3D Canvas */}
@@ -218,9 +280,9 @@ export default function RealmScene() {
         </div>
         <div className="glass-light px-4 py-2 rounded-xl flex items-center gap-3">
           <div className="w-3 h-3 rounded-full animate-pulse" style={{ background: realm.color }} />
-          <span className="font-outfit font-bold text-white text-sm">{realm.name}</span>
+          <span className="font-outfit font-bold text-white text-sm">Grade {realm.grade}</span>
           <span className="text-white/30 text-sm">·</span>
-          <span className="text-white/50 text-sm">Grade {realm.grade}</span>
+          <span className="text-white/50 text-sm">{realm.tagline}</span>
         </div>
         <div className="pointer-events-auto flex gap-2">
           <button className="btn-secondary text-sm py-2" onClick={() => navigate('/dashboard')}>

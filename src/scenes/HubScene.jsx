@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, Suspense, useMemo } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { Stars, Environment, useGLTF } from '@react-three/drei'
+import { Stars, Environment, useGLTF, Html } from '@react-three/drei'
 import { useNavigate } from 'react-router-dom'
 import { gsap } from 'gsap'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -112,8 +112,8 @@ function RealmRegion({ scene, realm, isHovered, onClick, onPointerOver, onPointe
   )
 }
 
-// ── Label pin that floats above each realm region ─────────────────
-function RealmPin({ scene, realm, isHovered }) {
+// ── Grade label that floats above each continent ─────────────────
+function RealmLabel({ scene, realm, isHovered }) {
   const mapping = REALM_MESH_MAP[realm.id]
   if (!mapping) return null
   const palette = GRADE_COLORS[mapping.grade] || GRADE_COLORS[1]
@@ -125,29 +125,61 @@ function RealmPin({ scene, realm, isHovered }) {
     meshes.forEach((m) => box.expandByObject(m))
     const c = new THREE.Vector3()
     box.getCenter(c)
-    c.y = box.max.y + 0.35
+    c.y = box.max.y + 0.5
     return c
   }, [scene, mapping.meshName])
 
-  const pinRef = useRef()
+  const groupRef = useRef()
   useFrame((state) => {
-    if (pinRef.current) {
-      pinRef.current.position.y = center.y + Math.sin(state.clock.getElapsedTime() * 1.5 + mapping.grade) * 0.06
-      pinRef.current.material.opacity = isHovered ? 1 : 0.65
+    if (groupRef.current) {
+      groupRef.current.position.y = center.y + Math.sin(state.clock.getElapsedTime() * 1.4 + mapping.grade) * 0.07
     }
   })
 
   return (
-    <mesh ref={pinRef} position={[center.x, center.y, center.z]}>
-      <sphereGeometry args={[0.07, 12, 12]} />
-      <meshStandardMaterial
-        color={palette.color}
-        emissive={palette.emissive}
-        emissiveIntensity={isHovered ? 2 : 0.6}
-        transparent
-        opacity={0.65}
-      />
-    </mesh>
+    <group ref={groupRef} position={[center.x, center.y, center.z]}>
+      {/* Dot */}
+      <mesh>
+        <sphereGeometry args={[0.07, 12, 12]} />
+        <meshStandardMaterial
+          color={palette.color}
+          emissive={palette.emissive}
+          emissiveIntensity={isHovered ? 2.5 : 0.8}
+          transparent
+          opacity={0.9}
+        />
+      </mesh>
+
+      {/* HTML label — always visible, bolder on hover */}
+      <Html
+        center
+        distanceFactor={12}
+        position={[0, 0.28, 0]}
+        style={{ pointerEvents: 'none' }}
+      >
+        <div
+          style={{
+            fontFamily: 'Outfit, sans-serif',
+            fontWeight: 800,
+            fontSize: isHovered ? '13px' : '11px',
+            color: '#ffffff',
+            background: isHovered
+              ? `linear-gradient(135deg, ${palette.from}, ${palette.to})`
+              : 'rgba(3,5,16,0.75)',
+            border: `1px solid ${palette.color}${isHovered ? 'cc' : '55'}`,
+            borderRadius: '8px',
+            padding: '3px 8px',
+            whiteSpace: 'nowrap',
+            transition: 'all 0.2s',
+            boxShadow: isHovered ? `0 0 14px ${palette.color}80` : 'none',
+            letterSpacing: '0.04em',
+            userSelect: 'none',
+          }}
+        >
+          Grade {realm.grade}
+        </div>
+      </Html>
+    </group>
   )
 }
 
@@ -199,13 +231,13 @@ function InteractiveWorldMap({ realms, onSelectRealm, hoveredRealm, setHoveredRe
         )
       })}
 
-      {/* Floating pins */}
+      {/* Floating grade labels */}
       {Object.entries(REALM_MESH_MAP).map(([realmId]) => {
         const realm = realmMap[realmId]
         if (!realm) return null
         return (
-          <RealmPin
-            key={`pin-${realmId}`}
+          <RealmLabel
+            key={`label-${realmId}`}
             scene={scene}
             realm={realm}
             isHovered={hoveredRealm?.id === realmId}
