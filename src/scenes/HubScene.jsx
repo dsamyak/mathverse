@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, Suspense } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { Stars, Environment, Sparkles } from '@react-three/drei'
+import { Stars, Environment, Sparkles, useGLTF } from '@react-three/drei'
 import { useNavigate } from 'react-router-dom'
 import { gsap } from 'gsap'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -15,24 +15,39 @@ import { useMouseParallax } from '../hooks/useMouseParallax'
 import HUD from '../ui/HUD'
 import Settings from '../ui/Settings'
 
-// ── Space void base (replaces ocean) ─────────────────────────────
-function SpaceVoid() {
+// ── Pre-load the GLB so it's ready when the scene mounts ─────────
+useGLTF.preload('/cartoon_world_map.glb')
+
+// ── Cartoon World Map — loaded from GLB ──────────────────────────
+function CartoonWorldMap() {
+  const { scene } = useGLTF('/cartoon_world_map.glb')
+  const mapRef = useRef()
+
+  // Gentle slow rotation to give it life
+  useFrame((_, delta) => {
+    if (mapRef.current) {
+      mapRef.current.rotation.y += delta * 0.015
+    }
+  })
+
+  // Enable shadows on every mesh in the model
+  useEffect(() => {
+    scene.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true
+        child.receiveShadow = true
+      }
+    })
+  }, [scene])
+
   return (
-    <>
-      {/* Nebula plane */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, 0]} receiveShadow>
-        <planeGeometry args={[140, 140]} />
-        <meshStandardMaterial
-          color="#030510"
-          roughness={1}
-          metalness={0}
-          transparent
-          opacity={0.9}
-        />
-      </mesh>
-      {/* Ambient glow below islands */}
-      <pointLight position={[0, -3, 0]} color="#0ea5e9" intensity={0.3} distance={30} decay={2} />
-    </>
+    <primitive
+      ref={mapRef}
+      object={scene}
+      // Centre it, push it down below the islands, and scale to fill the viewport
+      position={[0, -3.5, 0]}
+      scale={[5.5, 5.5, 5.5]}
+    />
   )
 }
 
@@ -74,21 +89,22 @@ function WorldMapScene({ realms, hoveredRealm, setHoveredRealm, onSelectRealm })
 
   return (
     <>
-      {/* Lighting */}
-      <ambientLight intensity={0.25} color="#1e1b4b" />
-      <directionalLight position={[10, 20, 10]} intensity={1}   castShadow color="#e0f2fe" />
+      {/* Lighting — brighter to show the cartoon model colours */}
+      <ambientLight intensity={0.6} color="#c7d8f0" />
+      <directionalLight position={[10, 20, 10]} intensity={1.4} castShadow color="#fff8e7" shadow-mapSize={[2048, 2048]} />
+      <directionalLight position={[-12, 10, -8]} intensity={0.5} color="#b0c4f8" />
       <pointLight position={[-10, 8, -10]} intensity={0.8}  color="#a855f7" distance={40} decay={2} />
       <pointLight position={[10,  5,  10]} intensity={0.5}  color="#22d3ee" distance={30} decay={2} />
       <pointLight position={[0,  15,   0]} intensity={0.3}  color="#38bdf8" distance={50} decay={2} />
 
-      <fog attach="fog" args={['#030510', 35, 85]} />
+      <fog attach="fog" args={['#030510', 40, 90]} />
 
       {/* Deep space */}
       <Stars radius={100} depth={60} count={3000} factor={4} saturation={0.1} fade speed={0.3} />
       <ParticleGalaxy count={1200} radius={50} />
 
-      {/* Ground void */}
-      <SpaceVoid />
+      {/* Cartoon world map base */}
+      <CartoonWorldMap />
 
       {/* Realm islands */}
       {activeRealms.map(r => {
@@ -331,8 +347,8 @@ export default function HubScene() {
 
       {/* 3D Canvas */}
       <Canvas
-        camera={{ position: [0, 22, 18], fov: 50 }}
-        gl={{ antialias: true, toneMapping: 3, toneMappingExposure: 0.9 }}
+        camera={{ position: [0, 26, 22], fov: 48 }}
+        gl={{ antialias: true, toneMapping: 3, toneMappingExposure: 1.1 }}
         shadows
         dpr={[1, 1.5]}
         className="layer-3d"
