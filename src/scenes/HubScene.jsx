@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, Suspense, useMemo } from 'react'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Stars, Environment, Sparkles, useGLTF } from '@react-three/drei'
+import { Canvas, useFrame } from '@react-three/fiber'
+import { Stars, Environment, useGLTF } from '@react-three/drei'
 import { useNavigate } from 'react-router-dom'
 import { gsap } from 'gsap'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -10,26 +10,38 @@ import { PostProcessing } from '../components/effects/PostProcessing'
 import { ParticleGalaxy } from '../components/three/ParticleGalaxy'
 import { useWorldMap } from '../api/worldApi'
 import { useWorldStore } from '../store/worldStore'
-import { usePlayerStore } from '../store/playerStore'
-import { useMouseParallax } from '../hooks/useMouseParallax'
 import HUD from '../ui/HUD'
 import Settings from '../ui/Settings'
 
 // Pre-load GLB
 useGLTF.preload('/cartoon_world_map.glb')
 
-// ── Realm → GLB mesh mapping ──────────────────────────────────────
-// These are the parent node names inside the GLB scene graph
+// ── Grade colours (one per grade) ────────────────────────────────
+const GRADE_COLORS = {
+  1:  { color: '#4ade80', emissive: '#16a34a', from: '#22c55e', to: '#38bdf8'  },
+  2:  { color: '#34d399', emissive: '#059669', from: '#059669', to: '#38bdf8'  },
+  3:  { color: '#86efac', emissive: '#15803d', from: '#059669', to: '#84cc16'  },
+  4:  { color: '#22d3ee', emissive: '#0891b2', from: '#0891b2', to: '#a78bfa'  },
+  5:  { color: '#fbbf24', emissive: '#b45309', from: '#d97706', to: '#f59e0b'  },
+  6:  { color: '#a855f7', emissive: '#7c3aed', from: '#7c3aed', to: '#2563eb'  },
+  7:  { color: '#f472b6', emissive: '#be185d', from: '#db2777', to: '#a855f7'  },
+  8:  { color: '#60a5fa', emissive: '#1d4ed8', from: '#2563eb', to: '#06b6d4'  },
+  9:  { color: '#818cf8', emissive: '#4338ca', from: '#4f46e5', to: '#7c3aed'  },
+  10: { color: '#f87171', emissive: '#b91c1c', from: '#dc2626', to: '#f97316'  },
+}
+
+// ── Realm → GLB mesh mapping (all 10 grades) ─────────────────────
 const REALM_MESH_MAP = {
-  realm_grade1:  { meshName: 'North',     label: 'Counting Cove',        color: '#4ade80',  emissive: '#22c55e' },
-  realm_grade3:  { meshName: 'America_1', label: 'Multiplication Marsh', color: '#34d399',  emissive: '#059669' },
-  realm_grade4:  { meshName: 'Africa',    label: 'Fraction Isles',        color: '#22d3ee',  emissive: '#0891b2' },
-  realm_grade6:  { meshName: 'Eurasia',   label: 'Algebra Ascent',        color: '#a855f7',  emissive: '#7c3aed' },
-  // Locked
-  realm_grade2:  { meshName: 'America_2',   label: 'Addition Archipelago', color: '#475569', emissive: '#1e293b', locked: true },
-  realm_grade5:  { meshName: 'Australia',   label: 'Decimal Dunes',        color: '#475569', emissive: '#1e293b', locked: true },
-  realm_grade7:  { meshName: 'South',       label: 'Geometry Gardens',     color: '#475569', emissive: '#1e293b', locked: true },
-  realm_grade8:  { meshName: 'Greenland',   label: 'Probability Peaks',    color: '#475569', emissive: '#1e293b', locked: true },
+  realm_grade1:  { meshName: 'North',        grade: 1  },
+  realm_grade2:  { meshName: 'America_2',    grade: 2  },
+  realm_grade3:  { meshName: 'America_1',    grade: 3  },
+  realm_grade4:  { meshName: 'Africa',       grade: 4  },
+  realm_grade5:  { meshName: 'Australia',    grade: 5  },
+  realm_grade6:  { meshName: 'Eurasia',      grade: 6  },
+  realm_grade7:  { meshName: 'South',        grade: 7  },
+  realm_grade8:  { meshName: 'Greenland',    grade: 8  },
+  realm_grade9:  { meshName: 'Plane_snow',   grade: 9  },
+  realm_grade10: { meshName: 'Plane_desert', grade: 10 },
 }
 
 // ── Collect all meshes under a named parent node ──────────────────
@@ -52,36 +64,31 @@ function getMeshesForNode(scene, nodeName) {
 }
 
 // ── Single interactive continent/region ──────────────────────────
-function RealmRegion({ scene, realm, isHovered, isActive, onClick, onPointerOver, onPointerOut }) {
+function RealmRegion({ scene, realm, isHovered, onClick, onPointerOver, onPointerOut }) {
   const mapping = REALM_MESH_MAP[realm.id]
   if (!mapping) return null
+  const palette = GRADE_COLORS[mapping.grade] || GRADE_COLORS[1]
 
   const meshes = useMemo(() => getMeshesForNode(scene, mapping.meshName), [scene, mapping.meshName])
   const groupRef = useRef()
   const materialsRef = useRef([])
 
-  // Clone materials on mount so we can mutate without affecting original
   useEffect(() => {
     materialsRef.current = meshes.map((mesh) => {
       const mat = mesh.material.clone()
       mesh.material = mat
       return mat
     })
-    return () => {
-      // restore: nothing needed, scene instance is component-scoped
-    }
   }, [meshes])
 
-  // Animate emissive glow on hover / active
   useFrame((_, delta) => {
-    const target = isHovered ? 0.6 : isActive ? 0.4 : mapping.locked ? 0.0 : 0.08
+    const target = isHovered ? 0.7 : 0.08
     materialsRef.current.forEach((mat) => {
       if (mat.emissiveIntensity !== undefined) {
         mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, target, delta * 8)
-        mat.emissive.set(mapping.emissive)
+        mat.emissive.set(palette.emissive)
       }
     })
-    // Subtle float on hover
     if (groupRef.current) {
       const targetY = isHovered ? 0.18 : 0
       groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, delta * 6)
@@ -96,20 +103,9 @@ function RealmRegion({ scene, realm, isHovered, isActive, onClick, onPointerOver
         <primitive
           key={i}
           object={mesh}
-          onClick={(e) => {
-            e.stopPropagation()
-            if (!mapping.locked && realm.isUnlocked) onClick()
-          }}
-          onPointerOver={(e) => {
-            e.stopPropagation()
-            onPointerOver()
-            document.body.style.cursor = mapping.locked ? 'not-allowed' : 'pointer'
-          }}
-          onPointerOut={(e) => {
-            e.stopPropagation()
-            onPointerOut()
-            document.body.style.cursor = 'auto'
-          }}
+          onClick={(e) => { e.stopPropagation(); onClick() }}
+          onPointerOver={(e) => { e.stopPropagation(); onPointerOver(); document.body.style.cursor = 'pointer' }}
+          onPointerOut={(e) => { e.stopPropagation(); onPointerOut(); document.body.style.cursor = 'auto' }}
         />
       ))}
     </group>
@@ -120,8 +116,8 @@ function RealmRegion({ scene, realm, isHovered, isActive, onClick, onPointerOver
 function RealmPin({ scene, realm, isHovered }) {
   const mapping = REALM_MESH_MAP[realm.id]
   if (!mapping) return null
+  const palette = GRADE_COLORS[mapping.grade] || GRADE_COLORS[1]
 
-  // Find the bounding box center of the target meshes to position pin
   const center = useMemo(() => {
     const meshes = getMeshesForNode(scene, mapping.meshName)
     if (meshes.length === 0) return new THREE.Vector3(0, 2, 0)
@@ -136,18 +132,18 @@ function RealmPin({ scene, realm, isHovered }) {
   const pinRef = useRef()
   useFrame((state) => {
     if (pinRef.current) {
-      pinRef.current.position.y = center.y + Math.sin(state.clock.getElapsedTime() * 1.5 + realm.grade) * 0.06
-      pinRef.current.material.opacity = isHovered ? 1 : mapping.locked ? 0.25 : 0.65
+      pinRef.current.position.y = center.y + Math.sin(state.clock.getElapsedTime() * 1.5 + mapping.grade) * 0.06
+      pinRef.current.material.opacity = isHovered ? 1 : 0.65
     }
   })
 
   return (
     <mesh ref={pinRef} position={[center.x, center.y, center.z]}>
-      <sphereGeometry args={[0.06, 12, 12]} />
+      <sphereGeometry args={[0.07, 12, 12]} />
       <meshStandardMaterial
-        color={mapping.locked ? '#475569' : mapping.color}
-        emissive={mapping.locked ? '#0f172a' : mapping.emissive}
-        emissiveIntensity={isHovered ? 1.5 : 0.5}
+        color={palette.color}
+        emissive={palette.emissive}
+        emissiveIntensity={isHovered ? 2 : 0.6}
         transparent
         opacity={0.65}
       />
@@ -196,7 +192,6 @@ function InteractiveWorldMap({ realms, onSelectRealm, hoveredRealm, setHoveredRe
             scene={scene}
             realm={realm}
             isHovered={hoveredRealm?.id === realmId}
-            isActive={false}
             onClick={() => onSelectRealm(realm)}
             onPointerOver={() => setHoveredRealm(realm)}
             onPointerOut={() => setHoveredRealm(null)}
@@ -260,79 +255,68 @@ function WorldMapScene({ realms, hoveredRealm, setHoveredRealm, onSelectRealm })
   )
 }
 
-// ── Realm list panel (left sidebar) ──────────────────────────────
-function RealmCard({ realm, onClick, index, isHovered }) {
-  const statusColor = realm.masteryPercent === 100 ? '#4ade80'
-    : realm.masteryPercent > 0 ? '#38bdf8' : '#94a3b8'
+// ── Grade card (sidebar) ──────────────────────────────────────────
+function GradeCard({ realm, onClick, index, isHovered }) {
+  const palette = GRADE_COLORS[realm.grade] || GRADE_COLORS[1]
 
   return (
     <motion.button
       initial={{ opacity: 0, x: -30 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.08, type: 'spring', stiffness: 200, damping: 25 }}
+      transition={{ delay: index * 0.05, type: 'spring', stiffness: 220, damping: 26 }}
       onClick={onClick}
       className="w-full text-left group"
       whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+      whileTap={{ scale: 0.97 }}
     >
       <div
-        className="glass rounded-2xl p-4 border transition-all duration-300"
+        className="glass rounded-2xl px-4 py-3 border transition-all duration-200"
         style={{
-          borderColor: isHovered
-            ? `${realm.color || '#38bdf8'}60`
-            : realm.color ? `${realm.color}20` : 'rgba(56,189,248,0.1)',
-          boxShadow: isHovered ? `0 0 20px ${realm.color || '#38bdf8'}25` : 'none',
+          borderColor: isHovered ? `${palette.color}70` : `${palette.color}18`,
+          boxShadow: isHovered ? `0 0 22px ${palette.color}22` : 'none',
         }}
       >
         <div className="flex items-center gap-3">
+          {/* Grade badge */}
           <div
-            className="w-10 h-10 rounded-xl flex-shrink-0 transition-all duration-300 group-hover:scale-110"
+            className="w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center font-black font-outfit text-sm text-white transition-transform duration-200 group-hover:scale-110"
             style={{
-              background: `linear-gradient(135deg, ${realm.gradientFrom || realm.color || '#38bdf8'}, ${realm.gradientTo || realm.color || '#a855f7'})`,
-              boxShadow: `0 0 16px ${realm.color || '#38bdf8'}50`,
+              background: `linear-gradient(135deg, ${palette.from}, ${palette.to})`,
+              boxShadow: `0 0 14px ${palette.color}50`,
             }}
-          />
-          <div className="flex-1 min-w-0">
-            <p className="font-outfit font-bold text-white text-sm truncate leading-tight">
-              {realm.name}
-            </p>
-            <p className="text-white/35 text-xs mt-0.5">Grade {realm.grade}</p>
+          >
+            {realm.grade}
           </div>
-          <span className="text-xs font-outfit font-bold" style={{ color: statusColor }}>
-            {realm.masteryPercent}%
+          <div className="flex-1 min-w-0">
+            <p className="font-outfit font-bold text-white text-sm leading-tight">
+              Grade {realm.grade}
+            </p>
+            <p className="text-white/35 text-xs mt-0.5 truncate">{realm.tagline}</p>
+          </div>
+          {/* Arrow */}
+          <span
+            className="text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+            style={{ color: palette.color }}
+          >
+            →
           </span>
-        </div>
-
-        {/* Progress bar */}
-        <div className="mt-3 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
-          <motion.div
-            className="h-full rounded-full"
-            initial={{ width: 0 }}
-            animate={{ width: `${realm.masteryPercent}%` }}
-            transition={{ delay: index * 0.08 + 0.3, duration: 0.8, ease: [0.34, 1.56, 0.64, 1] }}
-            style={{
-              background: `linear-gradient(90deg, ${realm.gradientFrom || realm.color || '#38bdf8'}, ${realm.gradientTo || realm.color || '#a855f7'})`,
-              boxShadow: `0 0 8px ${realm.color || '#38bdf8'}80`,
-            }}
-          />
         </div>
       </div>
     </motion.button>
   )
 }
 
-function RealmListPanel({ realms, onSelect, hoveredRealm, onHover }) {
-  const activeRealms = realms.filter(r => r.isUnlocked)
-  const lockedRealms = realms.filter(r => !r.isUnlocked)
+function GradeListPanel({ realms, onSelect, hoveredRealm }) {
+  // Sort by grade, all unlocked
+  const sorted = [...realms].sort((a, b) => a.grade - b.grade)
 
   return (
-    <div className="absolute left-5 top-1/2 -translate-y-1/2 w-64 flex flex-col gap-2.5 max-h-[78vh] overflow-y-auto layer-hud pr-1">
-      <p className="text-xs font-outfit font-bold text-white/30 uppercase tracking-[0.18em] mb-0.5 px-1">
-        Your Realms
+    <div className="absolute left-5 top-1/2 -translate-y-1/2 w-60 flex flex-col gap-2 max-h-[82vh] overflow-y-auto layer-hud pr-1">
+      <p className="text-xs font-outfit font-bold text-white/30 uppercase tracking-[0.18em] mb-1 px-1">
+        Select Grade
       </p>
-
-      {activeRealms.map((r, i) => (
-        <RealmCard
+      {sorted.map((r, i) => (
+        <GradeCard
           key={r.id}
           realm={r}
           onClick={() => onSelect(r)}
@@ -340,79 +324,42 @@ function RealmListPanel({ realms, onSelect, hoveredRealm, onHover }) {
           isHovered={hoveredRealm?.id === r.id}
         />
       ))}
-
-      {lockedRealms.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="mt-1 pt-3 border-t border-white/5"
-        >
-          <p className="text-xs font-outfit font-semibold text-white/20 uppercase tracking-widest mb-2 px-1">
-            Coming Soon ({lockedRealms.length})
-          </p>
-          {lockedRealms.slice(0, 3).map((r) => (
-            <div key={r.id} className="flex items-center gap-3 px-1 py-2 opacity-35">
-              <div className="w-7 h-7 rounded-lg bg-white/5 border border-white/8 flex items-center justify-center text-xs">🔒</div>
-              <div>
-                <p className="text-xs text-white/45 font-outfit font-medium">{r.name}</p>
-                <p className="text-xs text-white/20">Grade {r.grade}</p>
-              </div>
-            </div>
-          ))}
-          {lockedRealms.length > 3 && (
-            <p className="text-xs text-white/15 px-1 mt-1">+{lockedRealms.length - 3} more</p>
-          )}
-        </motion.div>
-      )}
     </div>
   )
 }
 
-// ── Island hover tooltip ──────────────────────────────────────────
-function IslandTooltip({ realm }) {
+// ── Hover tooltip ─────────────────────────────────────────────────
+function GradeTooltip({ realm }) {
   if (!realm) return null
-  const pct = realm.masteryPercent
-  const status = pct === 100 ? { label: '✓ Mastered', color: '#4ade80' }
-    : pct > 0 ? { label: '◉ In Progress', color: '#38bdf8' }
-    : realm.isUnlocked ? { label: '◎ Available — Click to Enter', color: '#38bdf8' }
-    : { label: '🔒 Locked', color: '#94a3b8' }
+  const palette = GRADE_COLORS[realm.grade] || GRADE_COLORS[1]
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 6, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 4, scale: 0.96 }}
-      transition={{ duration: 0.18 }}
-      className="glass border-glow-ocean p-4 rounded-2xl pointer-events-none w-52"
-      style={{ boxShadow: `0 0 30px ${realm.color || '#38bdf8'}30` }}
+      transition={{ duration: 0.15 }}
+      className="glass p-4 rounded-2xl pointer-events-none w-48"
+      style={{ boxShadow: `0 0 28px ${palette.color}30`, border: `1px solid ${palette.color}30` }}
     >
-      <div className="flex items-start gap-3 mb-3">
+      <div className="flex items-center gap-3 mb-2">
         <div
-          className="w-9 h-9 rounded-xl flex-shrink-0"
-          style={{
-            background: `linear-gradient(135deg, ${realm.gradientFrom || realm.color || '#38bdf8'}, ${realm.gradientTo || realm.color || '#a855f7'})`,
-          }}
-        />
+          className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center font-black font-outfit text-lg text-white"
+          style={{ background: `linear-gradient(135deg, ${palette.from}, ${palette.to})` }}
+        >
+          {realm.grade}
+        </div>
         <div>
-          <p className="font-outfit font-bold text-white text-sm">{realm.name}</p>
-          <p className="text-white/40 text-xs">Grade {realm.grade}</p>
+          <p className="font-outfit font-bold text-white text-sm">Grade {realm.grade}</p>
+          <p className="text-white/40 text-xs mt-0.5">{realm.tagline}</p>
         </div>
       </div>
-      {realm.isUnlocked && (
-        <div className="h-1 rounded-full overflow-hidden mb-2" style={{ background: 'rgba(255,255,255,0.07)' }}>
-          <div
-            className="h-full rounded-full"
-            style={{
-              width: `${pct}%`,
-              background: `linear-gradient(90deg, ${realm.gradientFrom || realm.color || '#38bdf8'}, ${realm.gradientTo || '#a855f7'})`,
-            }}
-          />
-        </div>
-      )}
-      <span className="text-xs font-outfit font-semibold" style={{ color: status.color }}>
-        {status.label}
-      </span>
+      <div
+        className="text-center text-xs font-outfit font-semibold py-1.5 rounded-xl mt-1"
+        style={{ background: `${palette.color}18`, color: palette.color }}
+      >
+        Click to Enter →
+      </div>
     </motion.div>
   )
 }
@@ -442,7 +389,6 @@ export default function HubScene() {
   const handleMouseMove = (e) => setMousePos({ x: e.clientX, y: e.clientY })
 
   const handleSelectRealm = (realm) => {
-    if (!realm.isUnlocked) return
     setCurrentRealm(realm.id)
     gsap.to('.hub-ui', {
       opacity: 0,
@@ -548,12 +494,11 @@ export default function HubScene() {
         {/* HUD */}
         <HUD />
 
-        {/* Realm panel — clicking a card also highlights the continent */}
-        <RealmListPanel
+        {/* Grade panel */}
+        <GradeListPanel
           realms={realms}
           onSelect={handleSelectRealm}
           hoveredRealm={hoveredRealm}
-          onHover={setHoveredRealm}
         />
 
         {/* Hover tooltip follows mouse */}
@@ -563,7 +508,7 @@ export default function HubScene() {
               className="fixed pointer-events-none layer-modal"
               style={{ left: mousePos.x + 18, top: mousePos.y - 70 }}
             >
-              <IslandTooltip realm={hoveredRealm} />
+              <GradeTooltip realm={hoveredRealm} />
             </div>
           )}
         </AnimatePresence>
